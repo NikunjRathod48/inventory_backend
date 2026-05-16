@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model aiquerylogs {
+  queryid      BigInt    @id @default(autoincrement())
+  userid       String?   @db.Uuid
+  userquestion String
+  airesponse   String?
+  createdat    DateTime? @default(now()) @db.Timestamp(6)
+  users        users?    @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model categories {
+  categoryid   Int        @id @default(autoincrement())
+  categoryname String     @unique @db.VarChar(100)
+  products     products[]
+}
+
+model invoices {
+  invoiceid     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderid       String?   @unique @db.Uuid
+  invoicenumber String    @unique @db.VarChar(50)
+  generatedat   DateTime? @default(now()) @db.Timestamp(6)
+  orders        orders?   @relation(fields: [orderid], references: [orderid], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model orderitems {
+  orderitemid BigInt    @id @default(autoincrement())
+  orderid     String?   @db.Uuid
+  productid   String?   @db.Uuid
+  quantity    Int
+  unitprice   Decimal   @db.Decimal(10, 2)
+  totalprice  Decimal   @db.Decimal(12, 2)
+  orders      orders?   @relation(fields: [orderid], references: [orderid], onDelete: Cascade, onUpdate: NoAction)
+  products    products? @relation(fields: [productid], references: [productid], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model orders {
+  orderid      String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customername String?      @db.VarChar(150)
+  orderdate    DateTime?    @default(now()) @db.Timestamp(6)
+  totalamount  Decimal      @db.Decimal(12, 2)
+  status       String       @db.VarChar(20)
+  createdby    String?      @db.Uuid
+  deliveredat  DateTime?    @db.Timestamp(6)
+  cancelledat  DateTime?    @db.Timestamp(6)
+  invoices     invoices?
+  orderitems   orderitems[]
+  users        users?       @relation(fields: [createdby], references: [userid], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([orderdate], map: "idx_order_date")
+  @@index([status], map: "idx_order_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model products {
+  productid         String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productname       String              @unique @db.VarChar(150)
+  categoryid        Int?
+  description       String?
+  price             Decimal             @db.Decimal(10, 2)
+  costprice         Decimal?            @db.Decimal(10, 2)
+  barcode           String?             @unique @db.VarChar(100)
+  isactive          Boolean?            @default(true)
+  createdat         DateTime?           @default(now()) @db.Timestamp(6)
+  orderitems        orderitems[]
+  categories        categories?         @relation(fields: [categoryid], references: [categoryid], onDelete: NoAction, onUpdate: NoAction)
+  stock             stock?
+  stocktransactions stocktransactions[]
+
+  @@index([productname], map: "idx_product_name")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model stock {
+  stockid           Int       @id @default(autoincrement())
+  productid         String?   @unique @db.Uuid
+  quantity          Int       @default(0)
+  lowstockthreshold Int?      @default(5)
+  updatedat         DateTime? @default(now()) @db.Timestamp(6)
+  products          products? @relation(fields: [productid], references: [productid], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([productid], map: "idx_stock_product")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model stocktransactions {
+  transactionid    BigInt    @id @default(autoincrement())
+  productid        String?   @db.Uuid
+  transactiontype  String    @db.VarChar(20)
+  quantity         Int
+  previousquantity Int
+  newquantity      Int
+  referenceid      String?   @db.Uuid
+  notes            String?
+  createdby        String?   @db.Uuid
+  createdat        DateTime? @default(now()) @db.Timestamp(6)
+  users            users?    @relation(fields: [createdby], references: [userid], onDelete: NoAction, onUpdate: NoAction)
+  products         products? @relation(fields: [productid], references: [productid], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model users {
+  userid            String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  fullname          String              @db.VarChar(100)
+  email             String              @unique @db.VarChar(150)
+  passwordhash      String
+  role              String              @db.VarChar(20)
+  isactive          Boolean?            @default(true)
+  createdat         DateTime?           @default(now()) @db.Timestamp(6)
+  aiquerylogs       aiquerylogs[]
+  orders            orders[]
+  stocktransactions stocktransactions[]
+}
