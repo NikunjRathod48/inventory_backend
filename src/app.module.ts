@@ -8,6 +8,8 @@ import { ProductsModule } from './products/products.module';
 import { StockModule } from './stock/stock.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { OrdersModule } from './orders/orders.module';
+import { DashboardModule } from './dashboard/dashboard.module';
+import { AssistantModule } from './assistant/assistant.module';
 
 @Module({
   imports: [
@@ -18,6 +20,8 @@ import { OrdersModule } from './orders/orders.module';
     ProductsModule,
     StockModule,
     OrdersModule,
+    DashboardModule,
+    AssistantModule,
   ],
   providers: [
     {
