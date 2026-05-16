@@ -12,10 +12,10 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 @Controller('stock')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class StockController {
-  constructor(private stockService: StockService) {}
+  constructor(private stockService: StockService) { }
 
   @Post('adjust')
-  @Roles('Admin')
+  @Roles('Admin', 'Staff')
   adjustStock(
     @Body() dto: AdjustStockDto,
     @CurrentUser('userId') userId: string,
@@ -24,6 +24,7 @@ export class StockController {
   }
 
   @Get()
+  @Roles('Admin', 'Staff')
   findAll(
     @Query('page') page?: number,
     @Query('limit') limit?: number,
@@ -34,11 +35,13 @@ export class StockController {
   }
 
   @Get('alerts')
+  @Roles('Admin', 'Staff')
   getLowStockAlerts() {
     return this.stockService.getLowStockAlerts();
   }
 
   @Get('history/:productId')
+  @Roles('Admin', 'Staff')
   getTransactionHistory(
     @Param('productId') productId: string,
     @Query('page') page?: number,

@@ -52,19 +52,61 @@ export class AssistantService {
         )
         .join('\n');
 
+      // Fetch users
+      const usersList = await this.prisma.users.findMany({
+        select: { fullname: true, email: true, role: true, isactive: true }
+      });
+      const usersData = usersList
+        .map(u => `- ${u.fullname} (${u.email}) | Role: ${u.role} | Active: ${u.isactive}`)
+        .join('\n');
+
+      // Fetch categories
+      const categoriesList = await this.prisma.categories.findMany();
+      const categoriesData = categoriesList
+        .map(c => `- ${c.categoryname} (ID: ${c.categoryid})`)
+        .join('\n');
+
+      // Fetch recent orders
+      const recentOrders = await this.prisma.orders.findMany({
+        take: 50,
+        orderBy: { orderdate: 'desc' },
+        include: {
+          users: { select: { fullname: true } },
+          orderitems: {
+            include: { products: { select: { productname: true } } }
+          }
+        }
+      });
+      const ordersData = recentOrders
+        .map(o => {
+          const items = o.orderitems.map(i => `${i.quantity}x ${i.products?.productname || 'Unknown'}`).join(', ');
+          const dateStr = o.orderdate ? o.orderdate.toISOString().split('T')[0] : 'N/A';
+          return `- Order ${o.orderid.split('-')[0]} | Date: ${dateStr} | Customer: ${o.customername || 'N/A'} | Status: ${o.status} | Total: ₹${o.totalamount} | Handled By: ${o.users?.fullname || 'System'} | Items: [${items}]`;
+        })
+        .join('\n');
+
       const systemPrompt = `
 You are StockSense AI, an intelligent inventory management assistant.
 
-You ONLY answer using the inventory data provided below.
+You ONLY answer using the system data provided below.
 
-Inventory Data:
+=== PRODUCTS & STOCK ===
 ${inventoryData}
+
+=== CATEGORIES ===
+${categoriesData}
+
+=== RECENT ORDERS (Last 50) ===
+${ordersData || 'No recent orders.'}
+
+=== STAFF & USERS ===
+${usersData}
 
 Rules:
 - Give concise and accurate answers.
 - Use markdown formatting when needed.
 - If data is unavailable, say so clearly.
-- Do not hallucinate products or stock.
+- Do not hallucinate data.
 `;
 
       // Fetch previous history
