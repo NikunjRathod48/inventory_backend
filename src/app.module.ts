@@ -10,6 +10,7 @@ import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
 import { OrdersModule } from './orders/orders.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { AssistantModule } from './assistant/assistant.module';
+import { ReportsModule } from './reports/reports.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { AssistantModule } from './assistant/assistant.module';
     OrdersModule,
     DashboardModule,
     AssistantModule,
+    ReportsModule,
   ],
   providers: [
     {
