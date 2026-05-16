@@ -111,6 +111,41 @@ export class StockService {
       ];
     }
 
+    if (isLowStockOnly) {
+      const allProducts = await this.prisma.products.findMany({
+        where,
+        include: { categories: true, stock: true },
+        orderBy: { productname: 'asc' },
+      });
+
+      let data = allProducts.map((p) => {
+        const stockInfo = p.stock || { quantity: 0, lowstockthreshold: 5, stockid: `virtual-${p.productid}`, productid: p.productid };
+        return {
+          ...stockInfo,
+          products: {
+            productid: p.productid,
+            productname: p.productname,
+            barcode: p.barcode,
+            categories: p.categories,
+          }
+        };
+      });
+
+      data = data.filter((s) => s.quantity <= (s.lowstockthreshold ?? 5));
+      const total = data.length;
+      const paginatedData = data.slice(skip, skip + limitNum);
+
+      return {
+        data: paginatedData,
+        meta: {
+          total,
+          page: pageNum,
+          limit: limitNum,
+          totalPages: Math.ceil(total / limitNum),
+        },
+      };
+    }
+
     const [productsList, total] = await Promise.all([
       this.prisma.products.findMany({
         where,
@@ -138,17 +173,13 @@ export class StockService {
       };
     });
 
-    if (isLowStockOnly) {
-      data = data.filter((s) => s.quantity <= (s.lowstockthreshold ?? 5));
-    }
-
     return {
       data,
       meta: {
-        total: isLowStockOnly ? data.length : total,
+        total,
         page: pageNum,
         limit: limitNum,
-        totalPages: Math.ceil((isLowStockOnly ? data.length : total) / limitNum),
+        totalPages: Math.ceil(total / limitNum),
       },
     };
   }
