@@ -92,6 +92,10 @@ export class OrdersService {
 
       return {
         ...order,
+        orderitems: order.orderitems.map((i) => ({
+          ...i,
+          orderitemid: i.orderitemid.toString(),
+        })),
         invoices: invoice,
       };
     }, {
